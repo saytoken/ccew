@@ -1,0 +1,39 @@
+{
+  "name": "ccxws",
+  "version": "0.10.1",
+  "description": "Cryptocurrency exchange websocket feeds",
+  "keywords": [
+    "cryptocurrency",
+    "exchange",
+    "websockets",
+    "realtime",
+    "feeds",
+    "bitcoin",
+    "ethereum",
+    "litecoin"
+  ],
+  "author": "Brian Mancini <bmancini@gmail.com>",
+  "license": "MIT",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "jest --coverage",
+    "test:ci": "jest --coverage && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js"
+  },
+  "repository": "altangent/ccxws",
+  "dependencies": {
+    "cloudscraper": "^1.5.0",
+    "jsonic": "^0.3.0",
+    "moment": "^2.22.1",
+    "pusher-js": "^4.2.2",
+    "semaphore": "^1.1.0",
+    "signalr-client": "0.0.17",
+    "winston": "^2.4.2",
+    "ws": "^5.1.1"
+  },
+  "devDependencies": {
+    "coveralls": "^3.0.1",
+    "eslint": "^4.19.1",
+    "jest": "^22.4.3",
+    "prettier": "^1.12.1"
+  }
+}
