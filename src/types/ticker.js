@@ -2,16 +2,28 @@
  * 行情数据
  */
 class Ticker {
-  constructor({ exchange, base, quote, tradeId, unix, price, amount, buyOrderId, sellOrderId }) {
+  constructor({ exchange, base, quote, symbol, baseVolume, quoteVolume, ask, average, bid, change, close, first, high, low, info, last, open, percentage, datetime, timestamp, vwap  }) {
     this.exchange = exchange;
-    this.quote = quote;
+    this.ask = ask;
     this.base = base;
-    this.tradeId = tradeId;
-    this.unix = unix;
-    this.price = price;
-    this.amount = amount;
-    this.buyOrderId = buyOrderId;
-    this.sellOrderId = sellOrderId;
+    this.quote = quote;
+    this.average = average;
+    this.baseVolume = baseVolume;
+    this.bid = bid;
+    this.change = change;
+    this.close = close;
+    this.datetime = datetime;
+    this.first = first;
+    this.high = high;
+    this.info = info;
+    this.last = last;
+    this.low = low;
+    this.open = open;
+    this.percentage = percentage;
+    this.quoteVolume = quoteVolume;
+    this.symbol = symbol;
+    this.timestamp = timestamp;
+    this.vwap = vwap;
   }
 
   get marketId() {
