@@ -1,7 +1,7 @@
-const BasicClient = require("../basic-client");
-const Trade = require("../trade");
-const Level2Point = require("../level2-point");
-const Level2Update = require("../level2-update");
+const BasicClient = require("../../basic-client");
+const Trade = require("../../types/trade");
+const Level2Point = require("../../types/level2-point");
+const Level2Update = require("../../types/level2-update");
 const moment = require("moment");
 
 class BitFlyerClient extends BasicClient {

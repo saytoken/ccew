@@ -5,10 +5,10 @@ const moment = require("moment");
 const cloudscraper = require("cloudscraper");
 const signalr = require("signalr-client");
 const Watcher = require("../watcher");
-const Trade = require("../trade");
-const Level2Snapshot = require("../level2-snapshot");
-const Level2Update = require("../level2-update");
-const Level2Point = require("../level2-point");
+const Trade = require("../../types/trade");
+const Level2Point = require("../../types/level2-point");
+const Level2Snapshot = require("../../types/level2-snapshot");
+const Level2Update = require("../../types/level2-update");
 
 class BittrexClient extends EventEmitter {
   constructor() {

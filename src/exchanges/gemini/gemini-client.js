@@ -1,10 +1,8 @@
 const { EventEmitter } = require("events");
-const Trade = require("../trade");
-const Auction = require("../auction");
-const Level2Point = require("../level2-point");
-const Level2Snapshot = require("../level2-snapshot");
-const Level2Update = require("../level2-update");
-const SmartWss = require("../smart-wss");
+const Trade = require("../../types/trade");
+const Level2Point = require("../../types/level2-point");
+const Level2Snapshot = require("../../types/level2-snapshot");
+const Level2Update = require("../../types/level2-update");
 const winston = require("winston");
 
 class GeminiClient extends EventEmitter {
