@@ -1,10 +1,10 @@
 const { EventEmitter } = require("events");
-const Trade = require("../../types/trade");
-const Auction = require("../../types/auction");
-const Level2Point = require("../../types/level2-point");
-const Level2Snapshot = require("../../types/level2-snapshot");
-const Level2Update = require("../../types/level2-update");
-const SmartWss = require("../../smart-wss");
+const Trade = require("../trade");
+const Auction = require("../auction");
+const Level2Point = require("../level2-point");
+const Level2Snapshot = require("../level2-snapshot");
+const Level2Update = require("../level2-update");
+const SmartWss = require("../smart-wss");
 const winston = require("winston");
 
 class GeminiClient extends EventEmitter {
@@ -181,13 +181,13 @@ class GeminiClient extends EventEmitter {
     if (!market) return;
 
     if (msg.type === "update") {
-      let { timestamp, timestampms, eventId, socket_sequence } = msg;
+      let { timestampms, eventId, socket_sequence } = msg;
 
       // process trades
       if (subscription.trades) {
         let events = msg.events.filter(p => p.type === "trade");
         for (let event of events) {
-          let trade = this._constructTrade(event, market, timestamp);
+          let trade = this._constructTrade(event, market, timestampms);
           if (trade instanceof Trade) this.emit("trade", trade);
           else if (trade instanceof Auction) this.emit("auction", trade);
         }
@@ -216,17 +216,19 @@ class GeminiClient extends EventEmitter {
   }
 
   _formatTrade(event, market, timestamp) {
-    let price = parseFloat(event.price);
-    let amount = event.makerSide === "ask" ? parseFloat(event.amount) : -parseFloat(event.amount);
+    let side = event.makerSide === "ask" ? "sell" : "buy";
+    let price = event.price;
+    let amount = event.amount;
 
     return new Trade({
       exchange: "Gemini",
       base: market.base,
       quote: market.quote,
       tradeId: event.tid,
+      side,
+      unix: timestamp,
       price,
       amount,
-      unix: timestamp,
     });
   }
 

@@ -1,8 +1,8 @@
-const BasicClient = require("../../basic-client");
-const Trade = require("../../types/trade");
-const Level2Point = require("../../types/level2-point");
-const Level2Snapshot = require("../../types/level2-snapshot");
-const Level2Update = require("../../types/level2-update");
+const BasicClient = require("../basic-client");
+const Trade = require("../trade");
+const Level2Point = require("../level2-point");
+const Level2Snapshot = require("../level2-snapshot");
+const Level2Update = require("../level2-update");
 const moment = require("moment");
 
 class BitmexClient extends BasicClient {
@@ -76,19 +76,16 @@ class BitmexClient extends BasicClient {
   _constructTrades(datum) {
     let { size, side, timestamp, price, trdMatchID } = datum;
     let market = this._tradeSubs.get(datum.symbol);
-
-    size = side === "Sell" ? -parseFloat(size) : parseFloat(size);
-    let priceNum = parseFloat(price);
-    let unix = moment(timestamp).unix();
-
+    let unix = moment(timestamp).valueOf();
     return new Trade({
       exchange: "BitMEX",
       base: market.base,
       quote: market.quote,
       tradeId: trdMatchID.replace(/-/g, ""),
       unix,
-      price: priceNum,
-      amount: size,
+      side: side.toLowerCase(),
+      price: price.toFixed(8),
+      amount: size.toFixed(8),
     });
   }
 
@@ -123,7 +120,7 @@ class BitmexClient extends BasicClient {
       if(datum.side === 'Sell') asks.push(point);
       else bids.push(point);
     }
-    return new Level2Snapshot({
+    return new Level2Update({
       exchange: 'BitMEX',
       base: market.base,
       quote: market.quote,

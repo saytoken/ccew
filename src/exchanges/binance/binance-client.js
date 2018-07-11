@@ -1,12 +1,11 @@
 const { EventEmitter } = require("events");
-const moment = require("moment");
 const winston = require("winston");
-const Trade = require("../../types/trade");
-const Level2Point = require("../../types/level2-point");
-const Level2Update = require("../../types/level2-update");
-const Level2Snapshot = require("../../types/level2-snapshot");
-const SmartWss = require("../../smart-wss");
-const Watcher = require("../../watcher");
+const Trade = require("../trade");
+const Level2Point = require("../level2-point");
+const Level2Update = require("../level2-update");
+const Level2Snapshot = require("../level2-snapshot");
+const SmartWss = require("../smart-wss");
+const Watcher = require("../watcher");
 
 class BinanceClient extends EventEmitter {
   constructor() {
@@ -168,9 +167,9 @@ class BinanceClient extends EventEmitter {
 
     let market = this._tradeSubs.get(symbol.toLowerCase());
 
-    let unix = moment.utc(time).unix();
-    let amount = buyer ? parseFloat(size) : -parseFloat(size);
-    price = parseFloat(price);
+    let unix = time;
+    let amount = size;
+    let side = buyer ? "buy" : "sell";
 
     return new Trade({
       exchange: "Binance",
@@ -178,6 +177,7 @@ class BinanceClient extends EventEmitter {
       quote: market.quote,
       tradeId: trade_id,
       unix,
+      side,
       price,
       amount,
     });

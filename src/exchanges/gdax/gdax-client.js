@@ -1,11 +1,11 @@
 const moment = require("moment");
-const BasicClient = require("../../basic-client");
-const Trade = require("../../types/trade");
-const Level2Point = require("../../types/level2-point");
-const Level2Snapshot = require("../../types/level2-snapshot");
-const Level2Update = require("../../types/level2-update");
-const Level3Point = require("../../types/level3-point");
-const Level3Update = require("../../types/level3-update");
+const BasicClient = require("../basic-client");
+const Trade = require("../trade");
+const Level2Point = require("../level2-point");
+const Level2Snapshot = require("../level2-snapshot");
+const Level2Update = require("../level2-update");
+const Level3Point = require("../level3-point");
+const Level3Update = require("../level3-update");
 
 class GdaxClient extends BasicClient {
   constructor() {
@@ -111,9 +111,7 @@ class GdaxClient extends BasicClient {
 
     let market = this._tradeSubs.get(product_id);
 
-    let unix = moment.utc(time).unix();
-    let amount = side === "sell" ? -parseFloat(size) : parseFloat(size);
-    let priceNum = parseFloat(price);
+    let unix = moment.utc(time).valueOf();
 
     maker_order_id = maker_order_id.replace(/-/g, "");
     taker_order_id = taker_order_id.replace(/-/g, "");
@@ -127,8 +125,9 @@ class GdaxClient extends BasicClient {
       quote: market.quote,
       tradeId: trade_id,
       unix,
-      price: priceNum,
-      amount,
+      side,
+      price,
+      amount: size,
       buyOrderId,
       sellOrderId,
     });

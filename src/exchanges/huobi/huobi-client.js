@@ -1,9 +1,9 @@
-const BasicClient = require("../../basic-client");
-const Trade = require("../../types/trade");
+const BasicClient = require("../basic-client");
+const Trade = require("../trade");
 const zlib = require("zlib");
 const winston = require("winston");
-const Level2Point = require("../../types/level2-point");
-const Level2Snapshot = require("../../types/level2-snapshot");
+const Level2Point = require("../level2-point");
+const Level2Snapshot = require("../level2-snapshot");
 
 class HuobiClient extends BasicClient {
   constructor() {
@@ -95,18 +95,16 @@ class HuobiClient extends BasicClient {
   _constructTradesFromMessage(remoteId, datum) {
     let { amount, direction, ts, price, id } = datum;
     let market = this._tradeSubs.get(remoteId);
-
-    amount = direction === "sell" ? -parseFloat(amount) : parseFloat(amount);
-    let priceNum = parseFloat(price);
-    let unix = Math.trunc(parseInt(ts) / 1000);
+    let unix = Math.trunc(parseInt(ts));
 
     return new Trade({
       exchange: "Huobi",
       base: market.base,
       quote: market.quote,
       tradeId: id,
+      side: direction,
       unix,
-      price: priceNum,
+      price,
       amount,
     });
   }

@@ -1,6 +1,6 @@
 {
   "name": "ccew",
-  "version": "0.10.1",
+  "version": "0.11.0",
   "description": "Cryptocurrency exchange websocket feeds",
   "keywords": [
     "cryptocurrency",
@@ -19,7 +19,7 @@
     "test": "jest --coverage",
     "test:ci": "jest --coverage && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js"
   },
-  "repository": "altangent/ccxws",
+  "repository": "saytoken/ccew",
   "dependencies": {
     "cloudscraper": "^1.5.0",
     "jsonic": "^0.3.0",

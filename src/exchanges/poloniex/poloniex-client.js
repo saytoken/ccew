@@ -1,8 +1,8 @@
-const BasicClient = require("../../basic-client");
-const Trade = require("../../types/trade");
-const Level2Point = require("../../types/level2-point");
-const Level2Update = require("../../types/level2-update");
-const Level2Snapshot = require("../../types/level2-snapshot");
+const BasicClient = require("../basic-client");
+const Trade = require("../trade");
+const Level2Point = require("../level2-point");
+const Level2Update = require("../level2-update");
+const Level2Snapshot = require("../level2-snapshot");
 
 class PoloniexClient extends BasicClient {
   constructor() {
@@ -136,8 +136,8 @@ class PoloniexClient extends BasicClient {
 
     let market = this._tradeSubs.get(remote_id);
 
-    let amount = side === "sell" ? -parseFloat(size) : parseFloat(size);
-    price = parseFloat(price);
+    side = side === 1 ? "buy" : "sell";
+    unix = unix * 1000;
     trade_id = parseInt(trade_id);
 
     return new Trade({
@@ -145,9 +145,10 @@ class PoloniexClient extends BasicClient {
       base: market.base,
       quote: market.quote,
       tradeId: trade_id,
+      side,
       unix,
       price,
-      amount,
+      amount: size,
     });
   }
 
