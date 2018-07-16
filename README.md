@@ -47,20 +47,20 @@ binance.subscribeLevel2Snapshots(market);
 
 ## Exchanges
 
-| Exchange | Class    | Trades  | OB-L2 Snapshot | OB-L2 Updates | OB-L3 Snapshot | OB-L3 Updates |
-| -------- | -------- | ------- | -------------- | ------------- | -------------- | ------------- |
-| Binance  | binance  | Support | Support        | Support       | -              | -             |
-| Bitfinex | bitfinex | Support | -              | Support\*     | -              | Support\*     |
-| bitFlyer | bitflyer | Support | -              | Support       | -              | -             |
-| BitMEX   | bitmex   | Support | -              | Support\*     | -              | -             |
-| Bitstamp | bitstamp | Support | Support        | Support       | -              | Support       |
-| Bittrex  | bittrex  | Support | -              | Support\*     | -              | -             |
-| GDAX     | gdax     | Support | -              | Support\*     | -              | Support       |
-| Gemini   | gemini   | Support | -              | Support\*     | -              | -             |
-| HitBTC   | hitbtc   | Support | -              | Support\*     | -              | -             |
-| Huobi    | huobi    | Support | Support        | -             | -              | -             |
-| OKEx     | okex     | Support | Support        | Support       | -              | -             |
-| Poloniex | poloniex | Support | -              | Support\*     | -              | -             |
+| Exchange | Class    | Ticker  | Trades  | OB-L2 Snapshot | OB-L2 Updates | OB-L3 Snapshot | OB-L3 Updates |
+| -------- | -------- | ------- | ------- | -------------- | ------------- | -------------- | ------------- |
+| Binance  | binance  | Support | Support | Support        | Support       | -              | -             |
+| Bitfinex | bitfinex | Support | Support | -              | Support\*     | -              | Support\*     |
+| bitFlyer | bitflyer | Support | Support | -              | Support       | -              | -             |
+| BitMEX   | bitmex   |         | Support | -              | Support\*     | -              | -             |
+| Bitstamp | bitstamp | -       | Support | Support        | Support       | -              | Support       |
+| Bittrex  | bittrex  | Support | Support | -              | Support\*     | -              | -             |
+| GDAX     | gdax     | Support | Support | -              | Support\*     | -              | Support       |
+| Gemini   | gemini   | -       | Support | -              | Support\*     | -              | -             |
+| HitBTC   | hitbtc   | Support | Support | -              | Support\*     | -              | -             |
+| Huobi    | huobi    | Support | Support | Support        | -             | -              | -             |
+| OKEx     | okex     | Support | Support | Support        | Support       | -              | -             |
+| Poloniex | poloniex | Support | Support | -              | Support\*     | -              | -             |
 
 Notes:
 
@@ -112,6 +112,10 @@ binance.on("trades", trade => console.log(trade));
 binance.on("l2snapshot", snapshot => console.log(snapshot));
 ```
 
+##### `ticker: Ticker`
+
+Fired when a ticker update is received. Returns an instance of `Ticker`.
+
 ##### `trade: Trade`
 
 Fired when a trade is received. Returns an instance of `Trade`.
@@ -139,6 +143,14 @@ Fired when a orderbook level 3 snapshot is received. Returns an instance of `Lev
 Fired when a level 3 update is recieved. Returns an instance of `Level3Update`.
 
 #### Methods
+
+##### `subscribeTicker(market): void`
+
+Subscribes to a ticker feed for a market. This method will cause the client to emit `ticker` events that have a payload of the `Ticker` object.
+
+##### `unsubscribeTicker(market): void`
+
+Unsubscribes from a ticker feed for a market.
 
 ##### `subscribeTrades(market): void`
 
@@ -198,6 +210,30 @@ Unbusbscribes from the orderbook level 3 updates for a market.
 
 \*For some exchanges, calling unsubscribe may cause a temporary disruption in all feeds.
 
+### `Ticker`
+
+The ticker class is the result of a `ticker` event.
+
+#### Properties
+
+* `fullId: string` - the normalized market id prefixed with the exchange, ie: `Binance:LTC/BTC`
+* `exchange: string` - the name of the exchange
+* `base: string` - the normalized base symbol for the market
+* `quote: string` - the normalized quote symbol for the market
+* `timestamp: int` - the unix timestamp in milliseconds
+* `last: string` - the last price of a match that caused a tick
+* `open: string` - the price 24 hours ago
+* `low: string` - the highest price in the last 24 hours
+* `high: string` - the lowest price in the last 24 hours
+* `volume: string` - the base volume traded in the last 24 hours
+* `quoteVolume: string` - the quote volume traded in the last 24 hours
+* `change: string` - the price change (last - open)
+* `changePercent: string` - the price change in percent (last - open) / open \* 100
+* `bid: string` - the best bid price
+* `bidVolume: string` - the volume at the best bid price
+* `ask: string` - the best ask price
+* `askVolume: string` - the volume at the best ask price
+
 ### `Trade`
 
 The trade class is the result of a `trade` event emitted from a client.
@@ -209,9 +245,10 @@ The trade class is the result of a `trade` event emitted from a client.
 * `base: string` - the normalized base symbol for the market
 * `quote: string` - the normalized quote symbol for the market
 * `tradeId: int` - the unique trade identifer from the exchanges feed
-* `unix: float` - the unix time stamp in seconds for when the trade executed
-* `price: float` - the price that the trade executed at
-* `amount: float` - the amount that was traded (positive means the buyer was the taker, negative means the seller was the taker)
+* `unix: int` - the unix timestamp in milliseconds for when the trade executed
+* `side: string` - whether the buyer `buy` or seller `sell` was the maker for the match
+* `price: string` - the price at which the match executed
+* `amount: string` - the amount executed in the match
 
 ### `Level2Point`
 

@@ -1,20 +1,42 @@
 const BasicClient = require("../../basic-client");
-const Trade = require("../../types/trade");
-const Level2Point = require("../../types/level2-point");
-const Level2Snapshot = require("../../types/level2-snapshot");
-const Level2Update = require("../../types/level2-update");
-const Level3Point = require("../../types/level3-point");
-const Level3Snapshot = require("../../types/level3-snapshot");
-const Level3Update = require("../../types/level3-update");
+const Ticker = require("../../type/ticker");
+const Trade = require("../../type/trade");
+const Level2Point = require("../../type/level2-point");
+const Level2Snapshot = require("../../type/level2-snapshot");
+const Level2Update = require("../../type/level2-update");
+const Level3Point = require("../../type/level3-point");
+const Level3Snapshot = require("../../type/level3-snapshot");
+const Level3Update = require("../../type/level3-update");
 
 class BitfinexClient extends BasicClient {
   constructor() {
     super("wss://api.bitfinex.com/ws", "Bitfinex");
     this._channels = {};
 
+    this.hasTickers = true;
     this.hasTrades = true;
     this.hasLevel2Updates = true;
     this.hasLevel3Updates = true;
+  }
+
+  _sendSubTicker(remote_id) {
+    this._wss.send(
+      JSON.stringify({
+        event: "subscribe",
+        channel: "ticker",
+        pair: remote_id,
+      })
+    );
+  }
+
+  _sendUnsubTicker(remote_id) {
+    this._wss.send(
+      JSON.stringify({
+        event: "unsubscribe",
+        channel: "ticker",
+        pair: remote_id,
+      })
+    );
   }
 
   _sendSubTrades(remote_id) {
@@ -104,6 +126,11 @@ class BitfinexClient extends BasicClient {
     // ignore heartbeats
     if (msg[1] === "hb") return;
 
+    if (channel.channel === "ticker") {
+      this._onTicker(msg, channel);
+      return;
+    }
+
     // trades
     if (channel.channel === "trades" && msg[1] === "tu") {
       this._onTradeMessage(msg, channel);
@@ -123,6 +150,31 @@ class BitfinexClient extends BasicClient {
       else this._onLevel2Update(msg, channel);
       return;
     }
+  }
+
+  _onTicker(msg) {
+    let [chanId, bid, bidSize, ask, askSize, change, changePercent, last, volume, high, low] = msg;
+    let remote_id = this._channels[chanId].pair;
+    let market = this._tickerSubs.get(remote_id);
+    let open = last + change;
+    let ticker = new Ticker({
+      exchange: "Bitfinex",
+      base: market.base,
+      quote: market.quote,
+      timestamp: Date.now(),
+      last: last.toFixed(8),
+      open: open.toFixed(8),
+      high: high.toFixed(8),
+      low: low.toFixed(8),
+      volume: volume.toFixed(8),
+      change: change.toFixed(8),
+      changePercent: changePercent.toFixed(2),
+      bid: bid.toFixed(8),
+      bidVolume: bidSize.toFixed(8),
+      ask: ask.toFixed(8),
+      askVolume: askSize.toFixed(8),
+    });
+    this.emit("ticker", ticker);
   }
 
   _onTradeMessage(msg) {

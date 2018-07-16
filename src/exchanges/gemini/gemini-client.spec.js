@@ -1,5 +1,5 @@
 const Gemini = require("./gemini-client");
-jest.mock("winston", () => ({ info: jest.fn() }));
+jest.mock("winston", () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }));
 
 let client;
 let market1 = {
@@ -82,9 +82,9 @@ test(
     client.subscribeTrades(market1);
     client.subscribeTrades(market2);
     client.on("trade", trade => {
-      //expect(trade.fullId).toMatch("Gemini:BTC/USD");
+      expect(trade.fullId).toMatch(/Gemini:(BTC|ETH)\/USD/);
       expect(trade.exchange).toMatch("Gemini");
-      //expect(trade.base).toMatch("BTC");
+      expect(trade.base).toMatch(/ETH|BTC/);
       expect(trade.quote).toMatch("USD");
       expect(trade.tradeId).toBeGreaterThan(0);
       expect(trade.unix).toBeGreaterThan(1522540800000);

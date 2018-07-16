@@ -1,12 +1,12 @@
 const { EventEmitter } = require("events");
 const winston = require("winston");
 const Pusher = require("pusher-js");
-const Trade = require("../../types/trade");
-const Level2Point = require("../../types/level2-point");
-const Level2Snapshot = require("../../types/level2-snapshot");
-const Level2Update = require("../../types/level2-update");
-const Level3Point = require("../../types/level3-point");
-const Level3Update = require("../../types/level3-update");
+const Trade = require("../../type/trade");
+const Level2Point = require("../../type/level2-point");
+const Level2Snapshot = require("../../type/level2-snapshot");
+const Level2Update = require("../../type/level2-update");
+const Level3Point = require("../../type/level3-point");
+const Level3Update = require("../../type/level3-update");
 
 class BitstampClient extends EventEmitter {
   constructor() {

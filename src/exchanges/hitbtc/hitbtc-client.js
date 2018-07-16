@@ -1,16 +1,18 @@
 const moment = require("moment");
 const semaphore = require("semaphore");
 const BasicClient = require("../../basic-client");
-const Trade = require("../../types/trade");
-const Level2Point = require("../../types/level2-point");
-const Level2Snapshot = require("../../types/level2-snapshot");
-const Level2Update = require("../../types/level2-update");
+const Ticker = require("../../type/ticker");
+const Trade = require("../../type/trade");
+const Level2Point = require("../../type/level2-point");
+const Level2Snapshot = require("../../type/level2-snapshot");
+const Level2Update = require("../../type/level2-update");
 
 class HitBTCClient extends BasicClient {
   constructor() {
     super("wss://api.hitbtc.com/api/2/ws", "HitBTC");
     this._id = 0;
 
+    this.hasTickers = true;
     this.hasTrades = true;
     this.hasLevel2Updates = true;
 
@@ -19,6 +21,32 @@ class HitBTCClient extends BasicClient {
 
   _resetSemaphore() {
     this._sem = semaphore(10);
+  }
+
+  _sendSubTicker(remote_id) {
+    this._sem.take(() => {
+      this._wss.send(
+        JSON.stringify({
+          method: "subscribeTicker",
+          params: {
+            symbol: remote_id,
+          },
+          id: ++this._id,
+        })
+      );
+    });
+  }
+
+  _sendUnsubTicker(remote_id) {
+    this._wss.send(
+      JSON.stringify({
+        method: "unsubscribeTicker",
+        params: {
+          symbol: remote_id,
+        },
+        id: ++this._id,
+      })
+    );
   }
 
   _sendSubTrades(remote_id) {
@@ -72,31 +100,6 @@ class HitBTCClient extends BasicClient {
     );
   }
 
-  _sendSubTickers(remote_id) {
-    this._sem.take(() => {
-      this._wss.send(
-        JSON.stringify({
-          method: "subscribeTicker",
-          params: {
-            symbol: remote_id,
-          },
-          id: ++this._id,
-        })
-      );
-    });
-  }
-
-  _sendUnsubTickers(remote_id) {
-    this._wss.send(
-      JSON.stringify({
-        method: "unsubscribeTicker",
-        params: {
-          symbol: remote_id,
-        },
-      })
-    );
-  }
-
   _onMessage(raw) {
     let msg = JSON.parse(raw);
 
@@ -104,6 +107,12 @@ class HitBTCClient extends BasicClient {
       this._sem.leave();
       return;
     }
+
+    if (msg.method === "ticker") {
+      let ticker = this._constructTicker(msg.params);
+      this.emit("ticker", ticker);
+    }
+
     if (msg.method === "updateTrades") {
       for (let datum of msg.params.data) {
         datum.symbol = msg.params.symbol;
@@ -124,12 +133,29 @@ class HitBTCClient extends BasicClient {
       this.emit("l2update", result);
       return;
     }
+  }
 
-    if (msg.method === "ticker") {
-      let result = this._constructTicker(msg.params);
-      this.emit("ticker", result);
-      return;
-    }
+  _constructTicker(param) {
+    let { ask, bid, last, open, low, high, volume, volumeQuote, timestamp, symbol } = param;
+    let market = this._tickerSubs.get(symbol);
+    let change = (parseFloat(last) - parseFloat(open)).toFixed(8);
+    let changePercent = ((parseFloat(last) - parseFloat(open)) / parseFloat(open) * 100).toFixed(8);
+    return new Ticker({
+      exchange: "HitBTC",
+      base: market.base,
+      quote: market.quote,
+      timestamp: moment.utc(timestamp).valueOf(),
+      last,
+      open,
+      high,
+      low,
+      volume,
+      quoteVolume: volumeQuote,
+      ask,
+      bid,
+      change,
+      changePercent,
+    });
   }
 
   _constructTradesFromMessage(datum) {
@@ -179,10 +205,6 @@ class HitBTCClient extends BasicClient {
       asks,
       bids,
     });
-  }
-
-  _constructTicker(data) {
-    return data;
   }
 }
 

@@ -1,9 +1,10 @@
 const semaphore = require("semaphore");
 const BasicClient = require("../../basic-client");
-const Trade = require("../../types/trade");
-const Level2Point = require("../../types/level2-point");
-const Level2Snapshot = require("../../types/level2-snapshot");
-const Level2Update = require("../../types/level2-update");
+const Ticker = require("../../type/ticker");
+const Trade = require("../../type/trade");
+const Level2Point = require("../../type/level2-point");
+const Level2Snapshot = require("../../type/level2-snapshot");
+const Level2Update = require("../../type/level2-update");
 
 class OKExClient extends BasicClient {
   constructor() {
@@ -11,6 +12,7 @@ class OKExClient extends BasicClient {
     this._pingInterval = setInterval(this._sendPing.bind(this), 30000);
     this.on("connected", this._resetSemaphore.bind(this));
 
+    this.hasTickers = true;
     this.hasTrades = true;
     this.hasLevel2Snapshots = true;
     this.hasLevel2Updates = true;
@@ -24,6 +26,28 @@ class OKExClient extends BasicClient {
     if (this._wss) {
       this._wss.send(JSON.stringify({ event: "ping" }));
     }
+  }
+
+  _sendSubTicker(remote_id) {
+    this._sem.take(() => {
+      this._wss.send(
+        JSON.stringify({
+          event: "addChannel",
+          channel: `ok_sub_spot_${remote_id}_ticker`,
+        })
+      );
+    });
+  }
+
+  _sendUnsubTicker(remote_id) {
+    this._sem.take(() => {
+      this._wss.send(
+        JSON.stringify({
+          event: "removeChannel",
+          channel: `ok_sub_spot_${remote_id}_ticker`,
+        })
+      );
+    });
   }
 
   _sendSubTrades(remote_id) {
@@ -112,6 +136,13 @@ class OKExClient extends BasicClient {
 
       if (!msg.channel) return;
 
+      // tickers
+      if (msg.channel.endsWith("_ticker")) {
+        let ticker = this._constructTicker(msg);
+        this.emit("ticker", ticker);
+        return;
+      }
+
       // l2 snapshots
       if (
         msg.channel.endsWith("_5") ||
@@ -130,6 +161,45 @@ class OKExClient extends BasicClient {
         return;
       }
     }
+  }
+
+  _constructTicker(msg) {
+    /*
+    { binary: 0,
+    channel: 'ok_sub_spot_eth_btc_ticker',
+    data:
+    { high: '0.07121405',
+      vol: '53824.717918',
+      last: '0.07071044',
+      low: '0.06909468',
+      buy: '0.07065946',
+      change: '0.00141498',
+      sell: '0.07071625',
+      dayLow: '0.06909468',
+      close: '0.07071044',
+      dayHigh: '0.07121405',
+      open: '0.06929546',
+      timestamp: 1531692991115 } }
+     */
+    let remoteId = msg.channel.substr("ok_sub_spot_".length).replace("_ticker", "");
+    let market = this._tickerSubs.get(remoteId);
+    let { open, vol, last, buy, change, sell, dayLow, dayHigh, timestamp } = msg.data;
+    let dayChangePercent = parseFloat(change) / parseFloat(open) * 100;
+    return new Ticker({
+      exchange: "OKEx",
+      base: market.base,
+      quote: market.quote,
+      timestamp,
+      last,
+      open,
+      high: dayHigh,
+      low: dayLow,
+      volume: vol,
+      change: change,
+      changePercent: dayChangePercent.toFixed(2),
+      bid: buy,
+      ask: sell,
+    });
   }
 
   _constructTradesFromMessage(remoteId, datum) {
@@ -156,7 +226,7 @@ class OKExClient extends BasicClient {
     */
     let { amount, side, createdDate, price, id } = datum;
     let market = this._tradeSubs.get(remoteId);
-    side = side === "1" ? "buy" : "sell";
+    side = side === 1 ? "buy" : "sell";
 
     return new Trade({
       exchange: "OKEx",

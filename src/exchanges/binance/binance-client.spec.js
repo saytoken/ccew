@@ -1,5 +1,5 @@
 const Binance = require("./binance-client");
-jest.mock("winston", () => ({ info: jest.fn() }));
+jest.mock("winston", () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }));
 
 let client;
 let market = {
@@ -10,6 +10,10 @@ let market = {
 
 beforeAll(() => {
   client = new Binance();
+});
+
+test("it should support tickers", () => {
+  expect(client.hasTickers).toBeTruthy();
 });
 
 test("it should support trades", () => {
@@ -30,6 +34,38 @@ test("it should not support level3 snapshots", () => {
 
 test("it should not support level3 updates", () => {
   expect(client.hasLevel3Updates).toBeFalsy();
+});
+
+test("should subscribe and emit ticker events", done => {
+  client.subscribeTicker(market);
+  client.on("ticker", ticker => {
+    expect(ticker.fullId).toMatch("Binance:ETH/BTC");
+    expect(ticker.timestamp).toBeGreaterThan(1531677480465);
+    expect(typeof ticker.last).toBe("string");
+    expect(typeof ticker.open).toBe("string");
+    expect(typeof ticker.high).toBe("string");
+    expect(typeof ticker.low).toBe("string");
+    expect(typeof ticker.volume).toBe("string");
+    expect(typeof ticker.change).toBe("string");
+    expect(typeof ticker.changePercent).toBe("string");
+    expect(typeof ticker.bid).toBe("string");
+    expect(typeof ticker.bidVolume).toBe("string");
+    expect(typeof ticker.ask).toBe("string");
+    expect(typeof ticker.askVolume).toBe("string");
+    expect(parseFloat(ticker.last)).toBeGreaterThan(0);
+    expect(parseFloat(ticker.open)).toBeGreaterThan(0);
+    expect(parseFloat(ticker.high)).toBeGreaterThan(0);
+    expect(parseFloat(ticker.low)).toBeGreaterThan(0);
+    expect(parseFloat(ticker.volume)).toBeGreaterThan(0);
+    expect(parseFloat(ticker.quoteVolume)).toBeGreaterThan(0);
+    expect(Math.abs(parseFloat(ticker.change))).toBeGreaterThan(0);
+    expect(Math.abs(parseFloat(ticker.changePercent))).toBeGreaterThan(0);
+    expect(parseFloat(ticker.bid)).toBeGreaterThan(0);
+    expect(parseFloat(ticker.bidVolume)).toBeGreaterThan(0);
+    expect(parseFloat(ticker.ask)).toBeGreaterThan(0);
+    expect(parseFloat(ticker.askVolume)).toBeGreaterThan(0);
+    done();
+  });
 });
 
 test(
@@ -81,13 +117,21 @@ test("should subscribe and emit level2 updates", done => {
     expect(update.base).toMatch("ETH");
     expect(update.quote).toMatch("BTC");
     expect(update.sequenceId).toBeGreaterThan(0);
-    expect(update.lastSequenceId).toBeGreaterThan(update.sequenceId);
-    expect(parseFloat(update.asks[0].price)).toBeGreaterThanOrEqual(0);
-    expect(parseFloat(update.asks[0].size)).toBeGreaterThanOrEqual(0);
-    expect(parseFloat(update.bids[0].price)).toBeGreaterThanOrEqual(0);
-    expect(parseFloat(update.bids[0].size)).toBeGreaterThanOrEqual(0);
+    expect(update.lastSequenceId).toBeGreaterThanOrEqual(update.sequenceId);
+    if (update.asks.length) {
+      expect(parseFloat(update.asks[0].price)).toBeGreaterThanOrEqual(0);
+      expect(parseFloat(update.asks[0].size)).toBeGreaterThanOrEqual(0);
+    }
+    if (update.bids.length) {
+      expect(parseFloat(update.bids[0].price)).toBeGreaterThanOrEqual(0);
+      expect(parseFloat(update.bids[0].size)).toBeGreaterThanOrEqual(0);
+    }
     done();
   });
+});
+
+test("should unsubscribe from tickers", () => {
+  client.unsubscribeTicker(market);
 });
 
 test("should unsubscribe from trades", () => {

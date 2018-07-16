@@ -16,16 +16,16 @@ class BasicTradeClient extends EventEmitter {
     super();
     this._wssPath = wssPath;
     this._name = name;
-    this._tradeSubs = new Map();
     this._tickerSubs = new Map();
+    this._tradeSubs = new Map();
     this._level2SnapshotSubs = new Map();
     this._level2UpdateSubs = new Map();
     this._level3UpdateSubs = new Map();
     this._wss = undefined;
     this._watcher = new Watcher(this);
 
+    this.hasTickers = false;
     this.hasTrades = true;
-    this.hasTickers = true;
     this.hasLevel2Snapshots = false;
     this.hasLevel2Updates = false;
     this.hasLevel3Updates = false;
@@ -48,6 +48,26 @@ class BasicTradeClient extends EventEmitter {
     this.emit("reconnected");
   }
 
+  subscribeTicker(market) {
+    if (!this.hasTickers) return;
+    this._subscribe(
+      market,
+      this._tickerSubs,
+      "subscribing to ticker",
+      this._sendSubTicker.bind(this)
+    );
+  }
+
+  unsubscribeTicker(market) {
+    if (!this.hasTickers) return;
+    this._unsubscribe(
+      market,
+      this._tickerSubs,
+      "unsubscribing from ticker",
+      this._sendUnsubTicker.bind(this)
+    );
+  }
+
   subscribeTrades(market) {
     if (!this.hasTrades) return;
     this._subscribe(
@@ -65,26 +85,6 @@ class BasicTradeClient extends EventEmitter {
       this._tradeSubs,
       "unsubscribing from trades",
       this._sendUnsubTrades.bind(this)
-    );
-  }
-
-  subscribeTickers(market) {
-    if (!this.hasTickers) return;
-    this._subscribe(
-      market,
-      this._tickerSubs,
-      "subscribing to tickers",
-      this._sendSubTickers.bind(this)
-    );
-  }
-
-  unsubscribeTickers(market) {
-    if (!this.hasTickers) return;
-    this._unsubscribe(
-      market,
-      this._tickerSubs,
-      "unsubscribing from tickers",
-      this._sendUnsubTickers.bind(this)
     );
   }
 
@@ -222,7 +222,7 @@ class BasicTradeClient extends EventEmitter {
   _onConnected() {
     this.emit("connected");
     for (let marketSymbol of this._tickerSubs.keys()) {
-      this._sendSubTickers(marketSymbol);
+      this._sendSubTicker(marketSymbol);
     }
     for (let marketSymbol of this._tradeSubs.keys()) {
       this._sendSubTrades(marketSymbol);
@@ -252,6 +252,16 @@ class BasicTradeClient extends EventEmitter {
 
   /* istanbul ignore next */
   _onMessage() {
+    throw new Error("not implemented");
+  }
+
+  /* istanbul ignore next */
+  _sendSubTicker() {
+    throw new Error("not implemented");
+  }
+
+  /* istanbul ignore next */
+  _sendUnsubTicker() {
     throw new Error("not implemented");
   }
 

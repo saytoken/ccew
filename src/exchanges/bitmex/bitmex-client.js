@@ -1,8 +1,8 @@
 const BasicClient = require("../../basic-client");
-const Trade = require("../../types/trade");
-const Level2Point = require("../../types/level2-point");
-const Level2Snapshot = require("../../types/level2-snapshot");
-const Level2Update = require("../../types/level2-update");
+const Trade = require("../../type/trade");
+const Level2Point = require("../../type/level2-point");
+const Level2Snapshot = require("../../type/level2-snapshot");
+const Level2Update = require("../../type/level2-update");
 const moment = require("moment");
 
 class BitmexClient extends BasicClient {

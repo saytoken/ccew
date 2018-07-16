@@ -1,9 +1,10 @@
 const { EventEmitter } = require("events");
 const winston = require("winston");
-const Trade = require("../../types/trade");
-const Level2Point = require("../../types/level2-point");
-const Level2Update = require("../../types/level2-update");
-const Level2Snapshot = require("../../types/level2-snapshot");
+const Ticker = require("../../type/ticker");
+const Trade = require("../../type/trade");
+const Level2Point = require("../../type/level2-point");
+const Level2Update = require("../../type/level2-update");
+const Level2Snapshot = require("../../type/level2-snapshot");
 const SmartWss = require("../../smart-wss");
 const Watcher = require("../../watcher");
 
@@ -11,12 +12,14 @@ class BinanceClient extends EventEmitter {
   constructor() {
     super();
     this._name = "Binance";
+    this._tickerSubs = new Map();
     this._tradeSubs = new Map();
     this._level2SnapshotSubs = new Map();
     this._level2UpdateSubs = new Map();
     this._wss = undefined;
     this._reconnectDebounce = undefined;
 
+    this.hasTickers = true;
     this.hasTrades = true;
     this.hasLevel2Snapshots = true;
     this.hasLevel2Updates = true;
@@ -27,6 +30,14 @@ class BinanceClient extends EventEmitter {
   }
 
   //////////////////////////////////////////////
+
+  subscribeTicker(market) {
+    this._subscribe(market, "subscribing to ticker", this._tickerSubs);
+  }
+
+  unsubscribeTicker(market) {
+    this._unsubscribe(market, "unsubscribing from ticker", this._tickerSubs);
+  }
 
   subscribeTrades(market) {
     this._subscribe(market, "subscribing to trades", this._tradeSubs);
@@ -116,6 +127,9 @@ class BinanceClient extends EventEmitter {
         Array.from(this._level2SnapshotSubs.keys()).map(p => p + "@depth20"),
         Array.from(this._level2UpdateSubs.keys()).map(p => p + "@depth")
       );
+      if (this._tickerSubs.size > 0) {
+        streams.push("!ticker@arr");
+      }
 
       let wssPath = "wss://stream.binance.com:9443/stream?streams=" + streams.join("/");
 
@@ -143,6 +157,16 @@ class BinanceClient extends EventEmitter {
   _onMessage(raw) {
     let msg = JSON.parse(raw);
 
+    // ticker
+    if (msg.stream === "!ticker@arr") {
+      for (let raw of msg.data) {
+        if (this._tickerSubs.has(raw.s.toLowerCase())) {
+          let ticker = this._constructTicker(raw);
+          this.emit("ticker", ticker);
+        }
+      }
+    }
+
     // trades
     if (msg.stream.endsWith("aggTrade")) {
       let trade = this._constructTradeFromMessage(msg);
@@ -160,6 +184,44 @@ class BinanceClient extends EventEmitter {
       let update = this._constructLevel2Update(msg);
       this.emit("l2update", update);
     }
+  }
+
+  _constructTicker(msg) {
+    let {
+      E: timestamp,
+      s: symbol,
+      c: last,
+      v: volume,
+      q: quoteVolume,
+      h: high,
+      l: low,
+      p: change,
+      P: changePercent,
+      a: ask,
+      A: askVolume,
+      b: bid,
+      B: bidVolume,
+    } = msg;
+    let market = this._tickerSubs.get(symbol.toLowerCase());
+    let open = parseFloat(last) + parseFloat(change);
+    return new Ticker({
+      exchange: "Binance",
+      base: market.base,
+      quote: market.quote,
+      timestamp: timestamp * 1000,
+      last,
+      open: open.toFixed(8),
+      high,
+      low,
+      volume,
+      quoteVolume,
+      change,
+      changePercent,
+      bid,
+      bidVolume,
+      ask,
+      askVolume,
+    });
   }
 
   _constructTradeFromMessage({ data }) {

@@ -1,13 +1,15 @@
 const BasicClient = require("../../basic-client");
-const Trade = require("../../types/trade");
-const Level2Point = require("../../types/level2-point");
-const Level2Snapshot = require("../../types/level2-snapshot");
 const zlib = require("zlib");
 const winston = require("winston");
+const Ticker = require("../../type/ticker");
+const Trade = require("../../type/trade");
+const Level2Point = require("../../type/level2-point");
+const Level2Snapshot = require("../../type/level2-snapshot");
 
 class HuobiClient extends BasicClient {
   constructor() {
     super("wss://api.huobi.pro/ws", "Huobi");
+    this.hasTickers = true;
     this.hasTrades = true;
     this.hasLevel2Snapshots = true;
   }
@@ -16,6 +18,24 @@ class HuobiClient extends BasicClient {
     if (this._wss) {
       this._wss.send(JSON.stringify({ pong: ts }));
     }
+  }
+
+  _sendSubTicker(remote_id) {
+    this._wss.send(
+      JSON.stringify({
+        sub: `market.${remote_id}.detail`,
+        id: remote_id,
+      })
+    );
+  }
+
+  _sendUnsubTicker(remote_id) {
+    this._wss.send(
+      JSON.stringify({
+        unsub: `market.${remote_id}.detail`,
+        id: remote_id,
+      })
+    );
   }
 
   _sendSubTrades(remote_id) {
@@ -82,6 +102,14 @@ class HuobiClient extends BasicClient {
         return;
       }
 
+      // tickers
+      if (msgs.ch.endsWith(".detail")) {
+        let remoteId = msgs.ch.split(".")[1];
+        let ticker = this._constructTicker(remoteId, msgs.tick);
+        this.emit("ticker", ticker);
+        return;
+      }
+
       // level2updates
       if (msgs.ch.endsWith("depth.step0")) {
         let remoteId = msgs.ch.split(".")[1];
@@ -89,6 +117,27 @@ class HuobiClient extends BasicClient {
         this.emit("l2snapshot", update);
         return;
       }
+    });
+  }
+
+  _constructTicker(remoteId, data) {
+    let { open, close, high, low, vol, amount } = data;
+    let market = this._tickerSubs.get(remoteId);
+    let dayChange = close - open;
+    let dayChangePercent = (close - open) / open * 100;
+    return new Ticker({
+      exchange: "Huobi",
+      base: market.base,
+      quote: market.quote,
+      timestamp: Date.now(),
+      last: close.toFixed(8),
+      open: open.toFixed(8),
+      high: high.toFixed(8),
+      low: low.toFixed(8),
+      volume: amount.toFixed(8),
+      quoteVolume: vol.toFixed(8),
+      change: dayChange.toFixed(8),
+      changePercent: dayChangePercent.toFixed(8),
     });
   }
 
